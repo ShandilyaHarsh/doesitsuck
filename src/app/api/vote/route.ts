@@ -50,8 +50,8 @@ function getClientIP(request: NextRequest): string | null {
     return cfConnectingIP.trim()
   }
   
-  // Fallback - this won't work in production but useful for development
-  return request.ip || '127.0.0.1'
+  // Fallback for development
+  return '127.0.0.1'
 }
 
 export async function POST(request: NextRequest) {

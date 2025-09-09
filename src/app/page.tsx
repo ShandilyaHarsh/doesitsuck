@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { getItems, insertVote, getRecentVotes, getCountryVotes, type ItemWithVotes, type VoteWithItem, type CountryVote } from '@/lib/supabase'
+import { getItems, getCountryVotes, type ItemWithVotes, type CountryVote } from '@/lib/supabase'
 
 export default function Home() {
   const [items, setItems] = useState<ItemWithVotes[]>([])
-  const [recentVotes, setRecentVotes] = useState<VoteWithItem[]>([])
   const [countryVotes, setCountryVotes] = useState<CountryVote[]>([])
   const [activeTab, setActiveTab] = useState<'voting' | 'countries'>('voting')
   const [loading, setLoading] = useState(true)
@@ -17,13 +16,11 @@ export default function Home() {
 
   const loadData = async () => {
     try {
-      const [itemsData, votesData, countryVotesData] = await Promise.all([
+      const [itemsData, countryVotesData] = await Promise.all([
         getItems(),
-        getRecentVotes(),
         getCountryVotes()
       ])
       setItems(itemsData)
-      setRecentVotes(votesData)
       setCountryVotes(countryVotesData)
     } catch (error) {
       console.error('Error loading data:', error)
@@ -84,7 +81,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Does It Suck?</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">does it suck or do i?</h1>
           <p className="text-gray-600">Vote on AI models and coding tools</p>
         </header>
 
@@ -304,6 +301,16 @@ function CountryVotesTab({ countryVotes }: { countryVotes: CountryVote[] }) {
     ? timeFilteredVotes 
     : timeFilteredVotes.filter(vote => vote.country === selectedCountry)
 
+  // Type for aggregated data
+  type AggregatedItem = {
+    country: string
+    item_name: string
+    category: string
+    upvotes: number
+    downvotes: number
+    score: number
+  }
+
   // Aggregate votes by country and item
   const aggregatedData = filteredVotes.reduce((acc, vote) => {
     const key = `${vote.country}-${vote.item.name}`
@@ -325,16 +332,16 @@ function CountryVotesTab({ countryVotes }: { countryVotes: CountryVote[] }) {
       acc[key].score--
     }
     return acc
-  }, {} as Record<string, any>)
+  }, {} as Record<string, AggregatedItem>)
 
   // Group by country for display
-  const groupedData = Object.values(aggregatedData).reduce((acc: any, item: any) => {
+  const groupedData = Object.values(aggregatedData).reduce((acc, item) => {
     if (!acc[item.country]) {
       acc[item.country] = []
     }
     acc[item.country].push(item)
     return acc
-  }, {} as Record<string, any[]>)
+  }, {} as Record<string, AggregatedItem[]>)
 
   return (
     <div className="space-y-6">
@@ -352,7 +359,7 @@ function CountryVotesTab({ countryVotes }: { countryVotes: CountryVote[] }) {
               ].map(({ key, label }) => (
                 <button
                   key={key}
-                  onClick={() => setTimeFilter(key as any)}
+                  onClick={() => setTimeFilter(key as '1h' | '6h' | '24h' | 'all')}
                   className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                     timeFilter === key
                       ? 'bg-blue-500 text-white'
@@ -437,9 +444,9 @@ function CountryVotesTab({ countryVotes }: { countryVotes: CountryVote[] }) {
                   {getCountryDisplay(country)}
                 </h4>
                 <div className="space-y-2">
-                  {(items as any[])
-                    .sort((a: any, b: any) => a.score - b.score) // Sort by score ascending (worst first)
-                    .map((item: any) => (
+                  {items
+                    .sort((a, b) => a.score - b.score) // Sort by score ascending (worst first)
+                    .map((item) => (
                       <div 
                         key={`${country}-${item.item_name}`}
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-md"

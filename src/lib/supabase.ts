@@ -164,7 +164,7 @@ export async function getCountryVotes(): Promise<CountryVote[]> {
       item_id,
       vote_type,
       created_at,
-      item:items(*)
+      item:items!inner(*)
     `)
     .not('country', 'is', null)
     .order('created_at', { ascending: false })
@@ -174,5 +174,5 @@ export async function getCountryVotes(): Promise<CountryVote[]> {
     throw error
   }
 
-  return data as CountryVote[]
+  return (data || []) as unknown as CountryVote[]
 }
